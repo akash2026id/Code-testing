@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ChatCity — Profile</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+#root { display:flex;flex-direction:column;height:100dvh; }
+.content { flex:1;overflow-y:auto; }
+.profile-hero { background:linear-gradient(160deg,var(--bg2),var(--bg3));padding:32px 20px 24px;text-align:center;position:relative; }
+.p-av-wrap { position:relative;width:88px;height:88px;margin:0 auto 14px; }
+.p-av { width:88px;height:88px;border-radius:50%;font-size:30px;border:3px solid var(--border);cursor:pointer; }
+.p-av img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
+.p-av-edit { position:absolute;bottom:0;right:0;width:28px;height:28px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:#fff; }
+.p-name { font-size:20px;font-weight:800;font-family:var(--font2);margin-bottom:4px; }
+.p-email { font-size:13px;color:var(--text2); }
+.p-code { display:inline-flex;align-items:center;gap:6px;background:rgba(124,110,255,0.15);border:1px solid rgba(124,110,255,0.3);border-radius:20px;padding:5px 14px;font-size:13px;color:var(--accent);font-weight:700;margin-top:10px;cursor:pointer;letter-spacing:2px; }
+.setting-item { display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s; }
+.setting-item:active { background:var(--bg3); }
+.setting-icon { width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
+.setting-label { flex:1;font-size:14px;font-weight:600; }
+.setting-sub { font-size:12px;color:var(--text2);margin-top:2px; }
+.setting-arrow { color:var(--text3);font-size:14px; }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="root">
+  <div class="topbar">
+    <div class="topbar-title">Profile</div>
+    <button class="btn btn-ghost" style="padding:8px 14px;font-size:13px;" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+
+  <div class="content">
+    <div class="profile-hero">
+      <div class="p-av-wrap">
+        <div class="av p-av" id="p-av" onclick="openAvatarModal()"></div>
+        <div class="p-av-edit" onclick="openAvatarModal()"><i class="fas fa-camera"></i></div>
+      </div>
+      <div class="p-name" id="p-name">Loading…</div>
+      <div class="p-email" id="p-email"></div>
+      <div class="p-code" id="p-code" onclick="copyCode()">
+        <i class="fas fa-hashtag"></i>
+        <span id="code-val">———————</span>
+        <i class="fas fa-copy" style="font-size:11px;opacity:.7;"></i>
+      </div>
+    </div>
+
+    <div class="sec-label" style="padding:16px 18px 8px;"><i class="fas fa-cog"></i> SETTINGS</div>
+
+    <div class="list-item setting-item" onclick="openEditName()">
+      <div class="setting-icon" style="background:rgba(124,110,255,0.15);color:var(--accent);"><i class="fas fa-user-pen"></i></div>
+      <div><div class="setting-label">Edit Name</div><div class="setting-sub" id="disp-name">…</div></div>
+      <i class="fas fa-chevron-right setting-arrow"></i>
+    </div>
+
+    <div class="list-item setting-item" onclick="openChangePw()">
+      <div class="setting-icon" style="background:rgba(45,212,160,0.15);color:var(--green);"><i class="fas fa-key"></i></div>
+      <div><div class="setting-label">Change Password</div><div class="setting-sub">Update your login password</div></div>
+      <i class="fas fa-chevron-right setting-arrow"></i>
+    </div>
+
+    <div class="list-item setting-item" onclick="openChangePin()">
+      <div class="setting-icon" style="background:rgba(247,201,75,0.15);color:var(--yellow);"><i class="fas fa-lock"></i></div>
+      <div><div class="setting-label">Change Passcode</div><div class="setting-sub">4-digit PIN lock</div></div>
+      <i class="fas fa-chevron-right setting-arrow"></i>
+    </div>
+
+    <div class="list-item setting-item" onclick="openNotifSettings()">
+      <div class="setting-icon" style="background:rgba(255,107,157,0.15);color:var(--accent2);"><i class="fas fa-bell"></i></div>
+      <div><div class="setting-label">Notifications</div><div class="setting-sub" id="notif-status">Checking…</div></div>
+      <i class="fas fa-chevron-right setting-arrow"></i>
+    </div>
+
+    <div class="list-item setting-item" onclick="go('admin.html')" style="display:none;" id="admin-link">
+      <div class="setting-icon" style="background:rgba(247,201,75,0.15);color:var(--yellow);"><i class="fas fa-shield-halved"></i></div>
+      <div><div class="setting-label">Admin Panel</div><div class="setting-sub">Manage ChatCity</div></div>
+      <i class="fas fa-chevron-right setting-arrow"></i>
+    </div>
+
+    <div style="margin:24px 18px;">
+      <button class="btn btn-danger" style="width:100%;" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </div>
+
+  <nav class="bnav">
+    <button class="nbtn" onclick="go('home.html')"><span class="ni"><i class="fas fa-comment-dots"></i></span><span class="nl">Chats</span></button>
+    <button class="nbtn" onclick="go('contacts.html')"><span class="ni"><i class="fas fa-users"></i></span><span class="nl">Contacts</span></button>
+    <button class="nbtn active" onclick="go('profile.html')"><span class="ni"><i class="fas fa-user"></i></span><span class="nl">Profile</span></button>
+  </nav>
+</div>
+
+<!-- Edit Name Modal -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fas fa-user-pen" style="color:var(--accent);"></i> Edit Name</div>
+    <input class="inp" type="text" id="new-name-inp" placeholder="Your full name" style="margin-bottom:14px;">
+    <button class="btn btn-primary" style="width:100%;" onclick="saveName()"><i class="fas fa-save"></i> Save</button>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" id="pw-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fas fa-key" style="color:var(--green);"></i> Change Password</div>
+    <input class="inp" type="password" id="cur-pw" placeholder="Current password" style="margin-bottom:10px;">
+    <input class="inp" type="password" id="new-pw" placeholder="New password (min 6 chars)" style="margin-bottom:14px;">
+    <button class="btn btn-primary" style="width:100%;" onclick="changePw()"><i class="fas fa-save"></i> Update Password</button>
+    <div id="pw-err" class="errmsg" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- Change PIN Modal — Custom keypad -->
+<div class="modal-overlay" id="pin-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fas fa-lock" style="color:var(--yellow);"></i> Set New Passcode</div>
+    <div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:16px;" id="pin-step-label">Enter new 4-digit PIN</div>
+    <div class="pin-dots" id="pin-change-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinChangeKey('1')">1</button>
+      <button class="pin-key" onclick="pinChangeKey('2')">2</button>
+      <button class="pin-key" onclick="pinChangeKey('3')">3</button>
+      <button class="pin-key" onclick="pinChangeKey('4')">4</button>
+      <button class="pin-key" onclick="pinChangeKey('5')">5</button>
+      <button class="pin-key" onclick="pinChangeKey('6')">6</button>
+      <button class="pin-key" onclick="pinChangeKey('7')">7</button>
+      <button class="pin-key" onclick="pinChangeKey('8')">8</button>
+      <button class="pin-key" onclick="pinChangeKey('9')">9</button>
+      <button class="pin-key empty"></button>
+      <button class="pin-key" onclick="pinChangeKey('0')">0</button>
+      <button class="pin-key backspace" onclick="pinChangeKey('⌫')"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <div id="pin-change-err" class="errmsg" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- Avatar Modal -->
+<div class="modal-overlay" id="avatar-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fas fa-camera" style="color:var(--accent);"></i> Profile Photo</div>
+    <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+    <button class="btn btn-primary" style="width:100%;margin-bottom:10px;" onclick="document.getElementById('avatar-input').click()"><i class="fas fa-upload"></i> Upload Photo</button>
+    <button class="btn btn-danger" style="width:100%;" onclick="removeAvatar()"><i class="fas fa-trash"></i> Remove Photo</button>
+  </div>
+</div>
+
+<script type="module">
+import {
+  auth, db, ref, get, set,
+  onAuthStateChanged, signOut, updateProfile,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword,
+  colorFor, initialsOf,
+  toast, go, getSession, clearSession, saveSession,
+  generateUserCode, updateUserSearchIndex, ADMIN_EMAIL
+} from './firebase.js';
+
+let me=null, userData=null;
+let pinStep=1, pinFirst='', pinEntered='';
+window.go=go;
+
+onAuthStateChanged(auth, async user=>{
+  if(!user){ go('index.html'); return; }
+  const sess=getSession(); if(!sess||sess.uid!==user.uid){ go('index.html'); return; }
+  me=user;
+  await loadProfile();
+  if(me.email===ADMIN_EMAIL) document.getElementById('admin-link').style.display='flex';
+  updateNotifStatus();
+});
+
+async function loadProfile() {
+  const snap=await get(ref(db,`users/${me.uid}`));
+  userData=snap.val()||{};
+  const av=document.getElementById('p-av');
+  if(userData.photo) { av.innerHTML=`<img src="${userData.photo}" alt="">`; }
+  else { av.textContent=userData.initials||initialsOf(me.displayName||me.email||'?'); av.style.background=userData.color||colorFor(me.uid); }
+  const name=userData.name||me.displayName||'User';
+  document.getElementById('p-name').textContent=name;
+  document.getElementById('p-email').textContent=me.email||'';
+  document.getElementById('disp-name').textContent=name;
+  document.getElementById('new-name-inp').value=name;
+  const code=generateUserCode(me.uid);
+  document.getElementById('code-val').textContent=code;
+}
+
+window.copyCode=()=>{
+  const code=document.getElementById('code-val').textContent;
+  navigator.clipboard.writeText(code).then(()=>toast('Friend code copied!','ok'));
+};
+
+function updateNotifStatus() {
+  const el=document.getElementById('notif-status');
+  if(!('Notification' in window)) { el.textContent='Not supported'; return; }
+  if(Notification.permission==='granted') el.textContent='✅ Enabled';
+  else if(Notification.permission==='denied') el.textContent='❌ Blocked — Enable in browser settings';
+  else el.textContent='⏳ Not set — Tap to enable';
+}
+
+window.openNotifSettings = async () => {
+  if(Notification.permission==='default') {
+    const r=await Notification.requestPermission();
+    updateNotifStatus();
+    if(r==='granted') toast('Notifications enabled!','ok');
+  } else {
+    toast(Notification.permission==='granted'?'Notifications are ON ✅':'Enable in browser settings → Notifications','ok');
+  }
+};
+
+// ── Name ──
+window.openEditName=()=>{ document.getElementById('name-modal').classList.add('show'); setTimeout(()=>document.getElementById('new-name-inp').focus(),300); };
+document.getElementById('name-modal').addEventListener('click',e=>{ if(e.target.id==='name-modal') e.target.classList.remove('show'); });
+window.saveName=async()=>{
+  const name=document.getElementById('new-name-inp').value.trim();
+  if(!name){ toast('Please enter a name','error'); return; }
+  const upd={ ...userData, name, initials:initialsOf(name) };
+  await set(ref(db,`users/${me.uid}`),upd);
+  await updateUserSearchIndex(me.uid,upd);
+  await updateProfile(me,{ displayName:name });
+  toast('Name updated!','ok');
+  document.getElementById('name-modal').classList.remove('show');
+  await loadProfile();
+};
+
+// ── Password ──
+window.openChangePw=()=>{ document.getElementById('pw-modal').classList.add('show'); };
+document.getElementById('pw-modal').addEventListener('click',e=>{ if(e.target.id==='pw-modal') e.target.classList.remove('show'); });
+window.changePw=async()=>{
+  const cur=document.getElementById('cur-pw').value;
+  const newp=document.getElementById('new-pw').value;
+  const errEl=document.getElementById('pw-err');
+  if(!cur||!newp){ errEl.textContent='Fill both fields'; return; }
+  if(newp.length<6){ errEl.textContent='New password min 6 chars'; return; }
+  try {
+    const cred=EmailAuthProvider.credential(me.email,cur);
+    await reauthenticateWithCredential(me,cred);
+    await updatePassword(me,newp);
+    toast('Password updated!','ok');
+    document.getElementById('pw-modal').classList.remove('show');
+    errEl.textContent='';
+  } catch(e) { errEl.textContent='❌ '+e.message; }
+};
+
+// ── PIN Change ──
+window.openChangePin=()=>{
+  pinStep=1; pinFirst=''; pinEntered='';
+  document.getElementById('pin-step-label').textContent='Enter new 4-digit PIN';
+  document.getElementById('pin-change-err').textContent='';
+  updatePinDots([],false);
+  document.getElementById('pin-modal').classList.add('show');
+};
+document.getElementById('pin-modal').addEventListener('click',e=>{ if(e.target.id==='pin-modal') e.target.classList.remove('show'); });
+
+function updatePinDots(filled, err=false) {
+  const dots=document.querySelectorAll('#pin-change-dots .pin-dot');
+  dots.forEach((d,i)=>{ d.classList.toggle('filled',!err&&i<filled.length); d.classList.toggle('error',err); });
+}
+
+window.pinChangeKey=k=>{
+  if(k==='⌫') pinEntered=pinEntered.slice(0,-1);
+  else if(pinEntered.length<4) pinEntered+=k;
+  updatePinDots(pinEntered);
+  if(pinEntered.length===4) setTimeout(processPin,120);
+};
+
+async function processPin() {
+  if(pinStep===1) {
+    pinFirst=pinEntered; pinEntered='';
+    document.getElementById('pin-step-label').textContent='Confirm your PIN';
+    updatePinDots('');
+    pinStep=2;
+  } else {
+    if(pinEntered===pinFirst) {
+      await set(ref(db,`users/${me.uid}/passcode`),pinEntered);
+      const sess=getSession(); saveSession(me.uid,pinEntered);
+      toast('Passcode updated!','ok');
+      document.getElementById('pin-modal').classList.remove('show');
+    } else {
+      updatePinDots('',true);
+      document.getElementById('pin-change-err').textContent='❌ PINs do not match. Try again.';
+      pinEntered=''; pinFirst=''; pinStep=1;
+      setTimeout(()=>{ updatePinDots(''); document.getElementById('pin-change-err').textContent=''; document.getElementById('pin-step-label').textContent='Enter new 4-digit PIN'; },900);
+    }
+  }
+}
+
+// ── Avatar ──
+window.openAvatarModal=()=>document.getElementById('avatar-modal').classList.add('show');
+document.getElementById('avatar-modal').addEventListener('click',e=>{ if(e.target.id==='avatar-modal') e.target.classList.remove('show'); });
+
+window.uploadAvatar=async inp=>{
+  const file=inp.files[0]; if(!file) return;
+  if(file.size>2*1024*1024){ toast('Image too large (max 2MB)','error'); return; }
+  const r=new FileReader();
+  r.onloadend=async()=>{
+    const b64=r.result;
+    await set(ref(db,`users/${me.uid}/photo`),b64);
+    toast('Photo updated!','ok');
+    document.getElementById('avatar-modal').classList.remove('show');
+    await loadProfile();
+  };
+  r.readAsDataURL(file);
+};
+
+window.removeAvatar=async()=>{
+  await set(ref(db,`users/${me.uid}/photo`),'');
+  toast('Photo removed','ok');
+  document.getElementById('avatar-modal').classList.remove('show');
+  await loadProfile();
+};
+
+// ── Logout ──
+window.doLogout=async()=>{
+  if(!confirm('Logout from ChatCity?')) return;
+  clearSession();
+  try { await signOut(auth); } catch{}
+  go('index.html');
+};
+</script>
+</body>
+</html>

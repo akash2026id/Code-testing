@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ChatCity — Login</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+body { display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;min-height:100vh; }
+.auth-bg { position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none; }
+.blob { position:absolute;border-radius:50%;filter:blur(80px);opacity:.35; }
+.blob1 { width:320px;height:320px;background:var(--accent);top:-100px;left:-80px; }
+.blob2 { width:280px;height:280px;background:var(--accent2);bottom:-80px;right:-60px; }
+.blob3 { width:200px;height:200px;background:var(--green);top:40%;left:60%; }
+.auth-wrap { position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column; }
+.logo-section { text-align:center;padding-bottom:28px; }
+.logo-box { width:72px;height:72px;background:linear-gradient(135deg,var(--accent),#b06fff);border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 8px 32px var(--glow); }
+.logo-name { font-family:var(--font2);font-size:32px;font-weight:700;letter-spacing:-1px; }
+.logo-name span { color:var(--accent); }
+.logo-sub { font-size:13px;color:var(--text2);margin-top:4px; }
+.form-card { background:rgba(15,15,26,.92);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:var(--r3);padding:28px 24px 24px; }
+.tabs { display:flex;background:var(--bg3);border-radius:var(--r);padding:4px;gap:4px;margin-bottom:22px; }
+.tab { flex:1;padding:9px;border:none;border-radius:10px;background:transparent;color:var(--text2);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s; }
+.tab.active { background:var(--accent);color:#fff;box-shadow:0 4px 16px var(--glow); }
+.form-group { margin-bottom:12px; }
+.form-label { font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px;display:block; }
+.inp-wrap { position:relative; }
+.inp-wrap .inp { padding-right:44px; }
+.inp-eye { position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px; }
+.email-status { position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none; }
+.email-ok { color:var(--green); }
+.email-bad { color:var(--red); }
+.email-spin { color:var(--yellow);display:inline-block;animation:spin .8s linear infinite; }
+.divider { display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--text3);font-size:12px; }
+.divider::before,.divider::after { content:'';flex:1;height:1px;background:var(--border2); }
+.google-btn { width:100%;padding:13px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s; }
+.google-btn:hover { background:var(--bg4);border-color:rgba(255,255,255,.15); }
+.errmsg { color:var(--red);font-size:12px;font-weight:600;text-align:center;margin-top:10px;min-height:16px; }
+.e2e-note { text-align:center;margin-top:18px;font-size:12px;color:var(--text3);display:flex;align-items:center;justify-content:center;gap:5px; }
+.forgot-link { text-align:right;margin-top:6px; }
+.forgot-link a { color:var(--accent);font-size:12px;cursor:pointer;text-decoration:underline; }
+.hint-msg { font-size:11px;margin-top:4px;min-height:14px; }
+</style>
+</head>
+<body>
+<div class="auth-bg"><div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div></div>
+<div id="toast"></div>
+
+<div class="auth-wrap">
+  <div class="logo-section">
+    <div class="logo-box"><i class="fas fa-comment-dots" style="color:#fff;font-size:34px;"></i></div>
+    <div class="logo-name">Chat<span>City</span></div>
+    <div class="logo-sub"><i class="fas fa-bolt"></i> Real-time · Encrypted · Fast</div>
+  </div>
+
+  <div class="form-card">
+    <div class="tabs">
+      <button class="tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+      <button class="tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="form-login">
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-envelope"></i> Email Address</label>
+        <div class="inp-wrap">
+          <input class="inp" type="email" id="l-email" placeholder="you@example.com" autocomplete="email" oninput="schedEmailCheck('l-email','l-es')">
+          <span class="email-status" id="l-es"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-lock"></i> Password</label>
+        <div class="inp-wrap">
+          <input class="inp" type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+          <button class="inp-eye" onclick="togglePw('l-pass',this)"><i class="fas fa-eye"></i></button>
+        </div>
+        <div class="forgot-link"><a onclick="showForgot()"><i class="fas fa-key"></i> Forgot Password?</a></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px;" id="login-btn" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> Login</button>
+      <div class="divider">or</div>
+      <button class="google-btn" onclick="doGoogle()"><i class="fab fa-google"></i> Continue with Google</button>
+      <div class="errmsg" id="l-err"></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div id="form-signup" class="hidden">
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-user"></i> Full Name</label>
+        <input class="inp" type="text" id="s-name" placeholder="Your full name" autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-envelope"></i> Email Address</label>
+        <div class="inp-wrap">
+          <input class="inp" type="email" id="s-email" placeholder="you@example.com" autocomplete="email" oninput="schedEmailCheck('s-email','s-es')">
+          <span class="email-status" id="s-es"></span>
+        </div>
+        <div class="hint-msg" id="s-email-hint"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-lock"></i> Password</label>
+        <div class="inp-wrap">
+          <input class="inp" type="password" id="s-pass" placeholder="Min 6 characters" autocomplete="new-password">
+          <button class="inp-eye" onclick="togglePw('s-pass',this)"><i class="fas fa-eye"></i></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><i class="fas fa-key"></i> Set Passcode (4-digit PIN) <span style="color:var(--text3);font-size:11px;font-weight:400;">optional</span></label>
+        <input class="inp" type="text" id="s-pin" placeholder="e.g. 1234" maxlength="4" pattern="\d{4}" inputmode="numeric">
+        <div style="font-size:11px;color:var(--text3);margin-top:5px;"><i class="fas fa-info-circle"></i> Remember this PIN — required each login</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:14px;" id="signup-btn" onclick="doSignup()"><i class="fas fa-user-plus"></i> Create Account</button>
+      <div class="divider">or</div>
+      <button class="google-btn" onclick="doGoogle()"><i class="fab fa-google"></i> Continue with Google</button>
+      <div class="errmsg" id="s-err"></div>
+    </div>
+  </div>
+  <div class="e2e-note"><i class="fas fa-shield-alt" style="color:var(--green);"></i> End-to-end encrypted · Your data stays yours</div>
+</div>
+
+<!-- PASSCODE MODAL -->
+<div class="modal-overlay" id="passcode-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fas fa-lock" style="color:var(--accent);"></i> Enter Passcode</div>
+    <div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:20px;">Enter your 4-digit PIN to unlock ChatCity</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinKey('1')">1</button><button class="pin-key" onclick="pinKey('2')">2</button><button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button><button class="pin-key" onclick="pinKey('5')">5</button><button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button><button class="pin-key" onclick="pinKey('8')">8</button><button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key empty"></button><button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key backspace" onclick="pinKey('⌫')"><i class="fas fa-delete-left"></i></button>
+    </div>
+    <div class="errmsg" id="pin-err" style="margin-top:14px;"></div>
+    <button onclick="doLogout()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:16px;width:100%;text-align:center;font-family:var(--font);">
+      <i class="fas fa-sign-out-alt"></i> Logout and use different account
+    </button>
+  </div>
+</div>
+
+<!-- FORGOT PASSWORD MODAL -->
+<div class="modal-overlay" id="fp-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><i class="fas fa-envelope-open-text" style="color:var(--accent);"></i> Forgot Password</div>
+    <p style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:18px;line-height:1.6;">Enter your registered email to receive a password reset link.</p>
+    <div class="inp-wrap" style="margin-bottom:14px;">
+      <input class="inp" type="email" id="fp-email" placeholder="you@example.com">
+      <span class="email-status" id="fp-es"></span>
+    </div>
+    <button class="btn btn-primary" style="width:100%;" id="fp-btn" onclick="sendForgotPw()"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
+    <div id="fp-msg" style="margin-top:12px;text-align:center;font-size:13px;min-height:18px;"></div>
+    <button onclick="document.getElementById('fp-modal').classList.remove('show')" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;margin-top:14px;width:100%;text-align:center;font-family:var(--font);">
+      <i class="fas fa-arrow-left"></i> Back to Login
+    </button>
+  </div>
+</div>
+
+<script type="module">
+import {
+  auth, db, gProvider,
+  ref, set, get,
+  signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  updateProfile, onAuthStateChanged, signOut, sendPasswordResetEmail,
+  colorFor, initialsOf,
+  toast, saveSession, getSession, clearSession,
+  go, createUserSearchIndex
+} from './firebase.js';
+
+// ── KEYS ──
+
+
+const BASE_URL     = window.location.href.replace(/[^/]*$/, '');
+
+let pendingUser = null, pinEntered = '';
+let emailCache = {}, emailTimers = {};
+
+// ════════════════════════════════
+// EMAIL VALIDATION — Simple regex (fast, no API needed)
+// ════════════════════════════════
+async function validateEmail(email) {
+  if(emailCache[email] !== undefined) return emailCache[email];
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  emailCache[email] = ok;
+  return ok;
+}
+
+window.schedEmailCheck = (inpId, stId) => {
+  const val = document.getElementById(inpId).value.trim();
+  const st  = document.getElementById(stId);
+  clearTimeout(emailTimers[inpId]);
+  if(!val.includes('@')){ st.innerHTML=''; return; }
+  st.innerHTML = '<i class="fas fa-spinner email-spin"></i>';
+  emailTimers[inpId] = setTimeout(async () => {
+    const ok = await validateEmail(val);
+    st.innerHTML = ok ? '<i class="fas fa-circle-check email-ok"></i>' : '<i class="fas fa-circle-xmark email-bad"></i>';
+    if(inpId==='s-email') {
+      const hint = document.getElementById('s-email-hint');
+      hint.innerHTML = ok ? '' : '<span style="color:var(--red);font-size:11px;"><i class="fas fa-triangle-exclamation"></i> Invalid or undeliverable email address.</span>';
+    }
+  }, 800);
+};
+
+// Email notifications removed — using FCM Push
+async function sendBrevoEmail(toEmail, toName, subject, html) { return true; }
+
+function buildWelcomeEmail(name) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#09090f;font-family:'Segoe UI',Arial,sans-serif;">
+<div style="max-width:580px;margin:0 auto;padding:28px 16px;">
+  <div style="background:linear-gradient(135deg,#7c6eff,#b06fff);border-radius:20px;padding:36px 28px;text-align:center;margin-bottom:20px;">
+    <div style="font-size:52px;margin-bottom:10px;">💬</div>
+    <h1 style="color:#fff;font-size:28px;margin:0 0 8px;font-weight:800;letter-spacing:-0.5px;">Welcome to ChatCity!</h1>
+    <p style="color:rgba(255,255,255,.85);font-size:14px;margin:0;"><i>Real-time · Encrypted · Fast</i></p>
+  </div>
+  <div style="background:#0f0f1a;border:1px solid rgba(124,110,255,.2);border-radius:18px;padding:28px;margin-bottom:16px;">
+    <h2 style="color:#f0f0ff;font-size:20px;margin:0 0 14px;">Hello, <strong style="color:#7c6eff;">${name}</strong>! 👋</h2>
+    <p style="color:#9494bb;font-size:14px;line-height:1.75;margin:0 0 18px;">Your ChatCity account is ready. Connect with friends, make HD voice & video calls, share photos and voice messages — all end-to-end encrypted.</p>
+    <div style="background:#161625;border-radius:12px;padding:16px 18px;margin-bottom:20px;">
+      <div style="color:#f0f0ff;font-size:13px;margin-bottom:10px;display:flex;gap:10px;align-items:center;"><span>🔒</span><strong>End-to-end Encrypted Messages</strong></div>
+      <div style="color:#f0f0ff;font-size:13px;margin-bottom:10px;display:flex;gap:10px;align-items:center;"><span>📞</span><strong>HD Voice &amp; Video Calls</strong></div>
+      <div style="color:#f0f0ff;font-size:13px;margin-bottom:10px;display:flex;gap:10px;align-items:center;"><span>🎙️</span><strong>Voice Messages</strong></div>
+      <div style="color:#f0f0ff;font-size:13px;display:flex;gap:10px;align-items:center;"><span>⚡</span><strong>Real-time Messaging</strong></div>
+    </div>
+    <a href="${BASE_URL}index.html" style="display:block;background:linear-gradient(135deg,#7c6eff,#9d8fff);color:#fff;text-decoration:none;padding:15px;border-radius:12px;text-align:center;font-weight:800;font-size:16px;letter-spacing:.3px;">🚀 Open ChatCity Now</a>
+  </div>
+  <div style="text-align:center;color:#4a4a6a;font-size:12px;line-height:1.9;padding:0 10px;">
+    <p style="margin:0;">Developed By <strong style="color:#7c6eff;">Mr. Abuhurira</strong> 💙🎀</p>
+    <p style="margin:0;">— ChatCity Team</p>
+  </div>
+</div></body></html>`;
+}
+
+function buildResetEmail(resetLink) {
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#09090f;font-family:'Segoe UI',Arial,sans-serif;">
+<div style="max-width:580px;margin:0 auto;padding:28px 16px;">
+  <div style="background:linear-gradient(135deg,#ff5370,#ff6b9d);border-radius:20px;padding:36px 28px;text-align:center;margin-bottom:20px;">
+    <div style="font-size:52px;margin-bottom:10px;">🔐</div>
+    <h1 style="color:#fff;font-size:26px;margin:0;font-weight:800;">Password Reset Request</h1>
+  </div>
+  <div style="background:#0f0f1a;border:1px solid rgba(255,83,112,.2);border-radius:18px;padding:28px;margin-bottom:16px;">
+    <h2 style="color:#f0f0ff;font-size:18px;margin:0 0 14px;">Reset Your Password</h2>
+    <p style="color:#9494bb;font-size:14px;line-height:1.75;margin:0 0 20px;">We received a request to reset your ChatCity password. Click the button below. This link expires in <strong style="color:#f7c94b;">1 hour</strong>.</p>
+    <a href="${resetLink}" style="display:block;background:linear-gradient(135deg,#ff5370,#ff6b9d);color:#fff;text-decoration:none;padding:15px;border-radius:12px;text-align:center;font-weight:800;font-size:16px;">🔑 Reset My Password</a>
+    <p style="color:#4a4a6a;font-size:12px;margin-top:18px;text-align:center;">If you didn't request this, ignore this email. Your password won't change.</p>
+  </div>
+  <div style="text-align:center;color:#4a4a6a;font-size:12px;line-height:1.9;">
+    <p style="margin:0;">Developed By <strong style="color:#7c6eff;">Mr. Abuhurira</strong> 💙🎀</p>
+    <p style="margin:0;">— ChatCity Team</p>
+  </div>
+</div></body></html>`;
+}
+
+// ════════════════════════════════
+// IP SESSION
+// ════════════════════════════════
+async function saveIPSession(uid, pin) {
+  saveSession(uid, pin);
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    if(d.ip) {
+      await set(ref(db, `users/${uid}/lastIP`), d.ip);
+      localStorage.setItem('cc_ip', d.ip);
+    }
+  } catch {}
+}
+
+// ════════════════════════════════
+// AFTER AUTH
+// ════════════════════════════════
+async function afterAuth(user) {
+  const snap = await get(ref(db, `users/${user.uid}`));
+  if(!snap.exists()) {
+    const name = user.displayName || 'User';
+    const userData = {
+      uid:user.uid, name, email:user.email,
+      initials:initialsOf(name), color:colorFor(user.uid),
+      photo:user.photoURL||'', passcode:'',
+      online:false, createdAt:Date.now(), lastVisit:Date.now()
+    };
+    await set(ref(db,`users/${user.uid}`), userData);
+    await createUserSearchIndex(user.uid, userData);
+    await saveIPSession(user.uid,'');
+    sendBrevoEmail(user.email, name, '🎉 Welcome to ChatCity!', buildWelcomeEmail(name));
+    go('home.html'); return;
+  }
+  const userData = snap.val();
+  await set(ref(db,`users/${user.uid}/lastVisit`), Date.now());
+  const passcode = userData.passcode||'';
+  if(passcode) {
+    pendingUser = {user, userData};
+    pinEntered='';
+    updateDots();
+    document.getElementById('pin-err').textContent='';
+    document.getElementById('passcode-modal').classList.add('show');
+  } else {
+    await saveIPSession(user.uid,'');
+    go('home.html');
+  }
+}
+
+// ════════════════════════════════
+// PIN
+// ════════════════════════════════
+function updateDots(err=false) {
+  document.querySelectorAll('#pin-dots .pin-dot').forEach((d,i)=>{
+    d.classList.toggle('filled',!err&&i<pinEntered.length);
+    d.classList.toggle('error',err);
+  });
+}
+
+window.pinKey = k => {
+  if(k==='⌫') pinEntered=pinEntered.slice(0,-1);
+  else if(k!==''&&pinEntered.length<4) pinEntered+=String(k);
+  updateDots();
+  if(pinEntered.length===4) setTimeout(checkPin,120);
+};
+
+function checkPin() {
+  if(!pendingUser) return;
+  if(pinEntered===String(pendingUser.userData.passcode)) {
+    saveIPSession(pendingUser.user.uid, pinEntered);
+    go('home.html');
+  } else {
+    updateDots(true);
+    document.getElementById('pin-err').textContent='❌ Wrong passcode. Try again.';
+    pinEntered='';
+    setTimeout(()=>{ updateDots(false); document.getElementById('pin-err').textContent=''; },900);
+  }
+}
+
+window.doLogout = async () => {
+  clearSession();
+  try{await signOut(auth);}catch{}
+  document.getElementById('passcode-modal').classList.remove('show');
+  pendingUser=null; pinEntered='';
+};
+
+// ════════════════════════════════
+// FORGOT PASSWORD
+// ════════════════════════════════
+window.showForgot = () => {
+  document.getElementById('fp-modal').classList.add('show');
+  document.getElementById('fp-email').value = document.getElementById('l-email').value;
+  document.getElementById('fp-msg').innerHTML='';
+  document.getElementById('fp-es').innerHTML='';
+};
+document.getElementById('fp-modal').addEventListener('click',e=>{ if(e.target.id==='fp-modal') e.target.classList.remove('show'); });
+document.getElementById('fp-email').addEventListener('input',function(){
+  schedEmailCheck_field(this.value,'fp-es');
+});
+let fpTimer;
+function schedEmailCheck_field(val,stId){
+  clearTimeout(fpTimer);
+  const st=document.getElementById(stId);
+  if(!val.includes('@')){st.innerHTML='';return;}
+  st.innerHTML='<i class="fas fa-spinner email-spin"></i>';
+  fpTimer=setTimeout(async()=>{
+    const ok=await validateEmail(val);
+    st.innerHTML=ok?'<i class="fas fa-circle-check email-ok"></i>':'<i class="fas fa-circle-xmark email-bad"></i>';
+  },700);
+}
+
+window.sendForgotPw = async () => {
+  const email = document.getElementById('fp-email').value.trim();
+  const msgEl = document.getElementById('fp-msg');
+  const btn   = document.getElementById('fp-btn');
+  if(!email){ msgEl.innerHTML='<span style="color:var(--red);">Please enter your email</span>'; return; }
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Validating…'; btn.disabled=true;
+  const ok = await validateEmail(email);
+  if(!ok){
+    msgEl.innerHTML='<span style="color:var(--red);"><i class="fas fa-circle-xmark"></i> This email address appears invalid.</span>';
+    btn.innerHTML='<i class="fas fa-paper-plane"></i> Send Reset Link'; btn.disabled=false;
+    return;
+  }
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sending…';
+  try {
+    await sendPasswordResetEmail(auth, email, { url: BASE_URL+'reset-password.html', handleCodeInApp:false });
+    const resetLink = BASE_URL+'reset-password.html';
+    sendBrevoEmail(email, email.split('@')[0], '🔐 ChatCity Password Reset', buildResetEmail(resetLink));
+    msgEl.innerHTML='<span style="color:var(--green);"><i class="fas fa-circle-check"></i> Reset link sent! Check your inbox.</span>';
+    toast('Password reset email sent! 📧','ok');
+  } catch(e) {
+    const m = e.code==='auth/user-not-found'?'No account found with this email.':e.message;
+    msgEl.innerHTML=`<span style="color:var(--red);"><i class="fas fa-triangle-exclamation"></i> ${m}</span>`;
+  } finally {
+    btn.innerHTML='<i class="fas fa-paper-plane"></i> Send Reset Link'; btn.disabled=false;
+  }
+};
+
+// ════════════════════════════════
+// LOGIN / SIGNUP / GOOGLE
+// ════════════════════════════════
+window.switchTab = t => {
+  ['login','signup'].forEach(x=>{
+    document.getElementById('tab-'+x).classList.toggle('active',x===t);
+    document.getElementById('form-'+x).classList.toggle('hidden',x!==t);
+  });
+  document.getElementById('l-err').textContent='';
+  document.getElementById('s-err').textContent='';
+};
+
+window.togglePw = (id,btn) => {
+  const inp=document.getElementById(id); const h=inp.type==='password';
+  inp.type=h?'text':'password';
+  btn.innerHTML=h?'<i class="fas fa-eye-slash"></i>':'<i class="fas fa-eye"></i>';
+};
+
+window.doLogin = async () => {
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  const errEl=document.getElementById('l-err');
+  const btn=document.getElementById('login-btn');
+  if(!email||!pass){errEl.textContent='Please fill in all fields';return;}
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Validating…'; btn.disabled=true; errEl.textContent='';
+  const emailOk = await validateEmail(email);
+  if(!emailOk){
+    document.getElementById('l-es').innerHTML='<i class="fas fa-circle-xmark email-bad"></i>';
+    errEl.textContent='⚠️ This email appears invalid or undeliverable.';
+    btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Login'; btn.disabled=false; return;
+  }
+  document.getElementById('l-es').innerHTML='<i class="fas fa-circle-check email-ok"></i>';
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Logging in…';
+  try {
+    const cred=await signInWithEmailAndPassword(auth,email,pass);
+    await afterAuth(cred.user);
+  } catch(e) {
+    errEl.textContent=(e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential')
+      ?'❌ Wrong email or password':e.message;
+  } finally { btn.innerHTML='<i class="fas fa-sign-in-alt"></i> Login'; btn.disabled=false; }
+};
+
+window.doSignup = async () => {
+  const name=document.getElementById('s-name').value.trim();
+  const email=document.getElementById('s-email').value.trim();
+  const pass=document.getElementById('s-pass').value;
+  const pin=document.getElementById('s-pin').value.trim();
+  const errEl=document.getElementById('s-err');
+  const btn=document.getElementById('signup-btn');
+  if(!name||!email||!pass){errEl.textContent='Please fill in all fields';return;}
+  if(pass.length<6){errEl.textContent='Password must be at least 6 characters';return;}
+  if(pin&&(pin.length!==4||!/^\d{4}$/.test(pin))){errEl.textContent='Passcode must be exactly 4 digits';return;}
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Validating email…'; btn.disabled=true; errEl.textContent='';
+  const emailOk=await validateEmail(email);
+  if(!emailOk){
+    document.getElementById('s-es').innerHTML='<i class="fas fa-circle-xmark email-bad"></i>';
+    errEl.textContent='⚠️ This email is invalid or undeliverable. Use a real email address.';
+    btn.innerHTML='<i class="fas fa-user-plus"></i> Create Account'; btn.disabled=false; return;
+  }
+  document.getElementById('s-es').innerHTML='<i class="fas fa-circle-check email-ok"></i>';
+  btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Creating account…';
+  try {
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:name});
+    const userData={uid:cred.user.uid,name,email,initials:initialsOf(name),color:colorFor(cred.user.uid),photo:'',passcode:pin||'',online:false,createdAt:Date.now(),lastVisit:Date.now()};
+    await set(ref(db,`users/${cred.user.uid}`),userData);
+    await createUserSearchIndex(cred.user.uid,userData);
+    await saveIPSession(cred.user.uid,pin||'');
+    sendBrevoEmail(email,name,'🎉 Welcome to ChatCity!',buildWelcomeEmail(name));
+    go('home.html');
+  } catch(e) {
+    errEl.textContent=e.code==='auth/email-already-in-use'?'This email is already registered':e.message;
+  } finally { btn.innerHTML='<i class="fas fa-user-plus"></i> Create Account'; btn.disabled=false; }
+};
+
+window.doGoogle = async () => {
+  try {
+    const result=await signInWithPopup(auth,gProvider);
+    await afterAuth(result.user);
+  } catch(e) { document.getElementById('l-err').textContent=e.message; }
+};
+
+onAuthStateChanged(auth,user=>{
+  if(user){ const sess=getSession(); if(sess&&sess.uid===user.uid) go('home.html'); }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  if(document.getElementById('fp-modal').classList.contains('show')){sendForgotPw();return;}
+  const isLogin=document.getElementById('tab-login').classList.contains('active');
+  if(isLogin) window.doLogin(); else window.doSignup();
+});
+window.go=go;
+</script>
+</body>
+</html>
