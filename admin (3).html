@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ChatCity — Admin Panel</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+#root { display:flex;flex-direction:column;height:100dvh; }
+.content { flex:1;overflow-y:auto; }
+.stat-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px; }
+.stat-card { background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:16px;text-align:center; }
+.stat-num { font-size:32px;font-weight:800;font-family:var(--font2); }
+.stat-lbl { font-size:12px;color:var(--text2);margin-top:4px; }
+.admin-sec { margin:0 16px 16px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);overflow:hidden; }
+.admin-sec-title { padding:14px 18px;font-size:13px;font-weight:800;color:var(--accent);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border); }
+.user-row { display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border); }
+.user-row:last-child { border-bottom:none; }
+.u-av { width:42px;height:42px;border-radius:50%;font-size:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;overflow:hidden; }
+.u-av img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
+.u-info { flex:1;min-width:0; }
+.u-name { font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px; }
+.u-email { font-size:11px;color:var(--text2);margin-top:2px; }
+.u-actions { display:flex;gap:6px;flex-shrink:0; }
+.act-btn { padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid;font-family:var(--font);transition:all .2s; }
+.act-badge { background:rgba(124,110,255,0.12);border-color:rgba(124,110,255,0.3);color:var(--accent); }
+.act-badge.active { background:var(--accent);color:#fff;border-color:var(--accent); }
+.act-ban { background:rgba(255,83,112,0.1);border-color:rgba(255,83,112,0.25);color:var(--red); }
+.act-ban.active { background:var(--red);color:#fff;border-color:var(--red); }
+.act-warn { background:rgba(247,201,75,0.1);border-color:rgba(247,201,75,0.25);color:var(--yellow); }
+@keyframes shine { 0%,100%{opacity:1;filter:brightness(1)} 50%{opacity:.7;filter:brightness(1.8)} }
+.verified-badge { width:14px;height:14px;vertical-align:middle;animation:shine 2s infinite; }
+.loading-row { padding:24px;text-align:center;color:var(--text3); }
+.push-area { padding:16px; }
+.push-area textarea { width:100%;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:14px;font-family:var(--font);padding:12px;outline:none;resize:vertical;min-height:80px;box-sizing:border-box; }
+.push-area textarea:focus { border-color:var(--accent); }
+.tab-btns { display:flex;background:var(--bg3);border-radius:var(--r);padding:4px;gap:4px;margin:16px 16px 0; }
+.tab-btn { flex:1;padding:9px;border:none;border-radius:10px;background:transparent;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s; }
+.tab-btn.active { background:var(--accent);color:#fff; }
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+.fcm-key-section { padding:16px;background:rgba(247,201,75,0.05);border:1px solid rgba(247,201,75,0.2);margin:16px;border-radius:var(--r2); }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="root">
+  <div class="topbar">
+    <button class="back-btn btn" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;width:40px;height:40px;border-radius:50%;" onclick="go('profile.html')"><i class="fas fa-arrow-left"></i></button>
+    <div class="topbar-title"><i class="fas fa-shield-halved" style="color:var(--yellow);"></i> Admin Panel</div>
+    <div style="width:40px;"></div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="total-users" style="color:var(--accent);">—</div>
+        <div class="stat-lbl"><i class="fas fa-users"></i> Total Users</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="online-count" style="color:var(--green);">—</div>
+        <div class="stat-lbl"><i class="fas fa-circle" style="font-size:8px;"></i> Online Now</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="verified-count" style="color:var(--yellow);">—</div>
+        <div class="stat-lbl"><i class="fas fa-badge-check"></i> Verified</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="banned-count" style="color:var(--red);">—</div>
+        <div class="stat-lbl"><i class="fas fa-ban"></i> Banned</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab('users')"><i class="fas fa-users"></i> Users</button>
+      <button class="tab-btn" onclick="switchTab('push')"><i class="fas fa-bell"></i> Push Notify</button>
+      <button class="tab-btn" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Settings</button>
+    </div>
+
+    <!-- USERS TAB -->
+    <div class="tab-panel active" id="tab-users">
+      <div class="admin-sec" style="margin-top:16px;">
+        <div class="admin-sec-title"><i class="fas fa-users"></i> All Users</div>
+        <div id="users-list"><div class="loading-row"><i class="fas fa-spinner fa-spin"></i> Loading users…</div></div>
+      </div>
+    </div>
+
+    <!-- PUSH NOTIFICATION TAB -->
+    <div class="tab-panel" id="tab-push">
+      <div class="admin-sec" style="margin-top:16px;">
+        <div class="admin-sec-title"><i class="fas fa-bell"></i> Send Push Notification</div>
+        <div class="push-area">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px;"><i class="fas fa-user-tag"></i> Target</label>
+            <select id="push-target" class="inp" style="width:100%;padding:10px 14px;cursor:pointer;">
+              <option value="ALL">📢 All Users (Broadcast)</option>
+            </select>
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px;"><i class="fas fa-heading"></i> Title</label>
+            <input class="inp" type="text" id="push-title" placeholder="Notification title…" style="width:100%;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px;"><i class="fas fa-message"></i> Message</label>
+            <textarea id="push-body" placeholder="Notification message…"></textarea>
+          </div>
+          <button class="btn btn-primary" style="width:100%;" onclick="sendAdminPush()">
+            <i class="fas fa-paper-plane"></i> Send Notification
+          </button>
+          <div id="push-result" style="margin-top:12px;text-align:center;font-size:13px;min-height:18px;"></div>
+        </div>
+      </div>
+
+      <!-- Recent broadcasts -->
+      <div class="admin-sec">
+        <div class="admin-sec-title"><i class="fas fa-history"></i> Recent Broadcasts</div>
+        <div id="broadcasts-list"><div class="loading-row">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-panel" id="tab-settings">
+      <div class="fcm-key-section">
+        <div style="font-size:13px;font-weight:700;color:var(--yellow);margin-bottom:8px;"><i class="fas fa-key"></i> FCM Server Key (for push delivery)</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Set your Firebase FCM Server Key to enable push notifications to offline users. Get it from Firebase Console → Project Settings → Cloud Messaging.</div>
+        <input class="inp" type="password" id="fcm-key-inp" placeholder="AAAA…your FCM server key…" style="width:100%;box-sizing:border-box;margin-bottom:10px;">
+        <button class="btn btn-primary" style="width:100%;" onclick="saveFcmKey()"><i class="fas fa-save"></i> Save FCM Key</button>
+        <div id="fcm-key-status" style="margin-top:8px;font-size:12px;text-align:center;"></div>
+      </div>
+
+      <div class="admin-sec">
+        <div class="admin-sec-title"><i class="fas fa-database"></i> Data Management</div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:10px;">
+          <button class="btn btn-ghost" style="width:100%;" onclick="rebuildSearchIndex()">
+            <i class="fas fa-rotate"></i> Rebuild Search Index
+          </button>
+          <button class="btn btn-ghost" style="width:100%;" onclick="cleanOldCalls()">
+            <i class="fas fa-trash-clock"></i> Clean Old Call Records
+          </button>
+          <button class="btn btn-danger" style="width:100%;" onclick="clearErrors()">
+            <i class="fas fa-bug-slash"></i> Clear Error Logs
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import {
+  auth, db, ref, get, set, push, onValue, remove, update,
+  onAuthStateChanged,
+  colorFor, initialsOf, VERIFIED_BADGE, ADMIN_EMAIL, ADMIN_UID,
+  toast, go, getSession, clearSession,
+  createUserSearchIndex, adminSendPush, assignBadge, sendPushToUser
+} from './firebase.js';
+
+let me=null, allUsers={};
+window.go=go;
+
+onAuthStateChanged(auth, async user=>{
+  if(!user){ go('index.html'); return; }
+  const sess=getSession(); if(!sess||sess.uid!==user.uid){ go('index.html'); return; }
+  if(user.email!==ADMIN_EMAIL){ toast('Access denied','error'); go('profile.html'); return; }
+  me=user;
+  await loadStats();
+  await loadUsers();
+  loadBroadcasts();
+  loadFcmKeyStatus();
+});
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['users','push','settings'][i]===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+window.switchTab=switchTab;
+
+async function loadStats() {
+  const snap=await get(ref(db,'users'));
+  const users=snap.val()||{};
+  const ids=Object.keys(users);
+  document.getElementById('total-users').textContent=ids.length;
+  document.getElementById('online-count').textContent=ids.filter(id=>users[id].online).length;
+  document.getElementById('verified-count').textContent=ids.filter(id=>users[id].verified).length;
+
+  const banSnap=await get(ref(db,'admin/banned'));
+  const banned=banSnap.val()||{};
+  document.getElementById('banned-count').textContent=Object.keys(banned).length;
+}
+
+async function loadUsers() {
+  const snap=await get(ref(db,'users'));
+  allUsers=snap.val()||{};
+  const list=document.getElementById('users-list');
+  const select=document.getElementById('push-target');
+
+  // Reset select options
+  select.innerHTML='<option value="ALL">📢 All Users (Broadcast)</option>';
+
+  const entries=Object.entries(allUsers).sort((a,b)=>(a[1].name||'').localeCompare(b[1].name||''));
+  if(!entries.length) { list.innerHTML='<div class="loading-row">No users found</div>'; return; }
+
+  list.innerHTML='';
+  const banSnap=await get(ref(db,'admin/banned'));
+  const banned=banSnap.val()||{};
+
+  entries.forEach(([uid,u])=>{
+    const isBanned=banned[uid]===true;
+    const isVerified=u.verified===true;
+
+    // Add to push target selector
+    const opt=document.createElement('option');
+    opt.value=uid;
+    opt.textContent=`👤 ${u.name||'User'} (${u.email||''})`;
+    select.appendChild(opt);
+
+    // Build user row
+    const row=document.createElement('div');
+    row.className='user-row';
+    const avHtml=u.photo
+      ? `<img src="${u.photo}" alt="">`
+      : `<div style="background:${u.color||colorFor(uid)};width:42px;height:42px;border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;">${initialsOf(u.name||'?')}</div>`;
+
+    const verifiedBadge=isVerified?`<img src="${VERIFIED_BADGE}" style="width:14px;height:14px;vertical-align:middle;animation:shine 2s infinite;">` : '';
+
+    row.innerHTML=`
+      <div class="u-av">${avHtml}</div>
+      <div class="u-info">
+        <div class="u-name">${escHtml(u.name||'User')} ${verifiedBadge} ${u.online?'<span style="font-size:10px;color:var(--green);font-weight:400;">● Online</span>':''}</div>
+        <div class="u-email">${escHtml(u.email||'')} · <span style="color:var(--accent);font-size:10px;">${generateCode(uid)}</span></div>
+      </div>
+      <div class="u-actions">
+        <button class="act-btn act-badge ${isVerified?'active':''}" id="badge-btn-${uid}" onclick="toggleBadge('${uid}')">
+          ${isVerified?'✅ Verified':'☐ Badge'}
+        </button>
+        <button class="act-btn act-ban ${isBanned?'active':''}" id="ban-btn-${uid}" onclick="toggleBan('${uid}')">
+          ${isBanned?'🔓 Unban':'🚫 Ban'}
+        </button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function generateCode(uid) {
+  try {
+    let hash=0;
+    for(let i=0;i<uid.length;i++){const c=uid.charCodeAt(i);hash=((hash<<5)-hash)+c;hash=hash&hash;}
+    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code='',num=Math.abs(hash);
+    for(let i=0;i<6;i++){code+=chars[num%chars.length];num=Math.floor(num/chars.length);}
+    let cs=0; for(let i=0;i<code.length;i++) cs+=code.charCodeAt(i);
+    return code+(cs%10);
+  } catch { return '???????'; }
+}
+
+window.toggleBadge = async uid => {
+  const u=allUsers[uid];
+  if(!u) return;
+  const newVal=!u.verified;
+  try {
+    await set(ref(db,`users/${uid}/verified`), newVal||null);
+    // Update search index
+    await createUserSearchIndex(uid, {...u, verified:newVal});
+    allUsers[uid].verified=newVal;
+    const btn=document.getElementById(`badge-btn-${uid}`);
+    if(btn) {
+      btn.className=`act-btn act-badge ${newVal?'active':''}`;
+      btn.innerHTML=newVal?'✅ Verified':'☐ Badge';
+    }
+    // Update verified count
+    const verifiedCount=Object.values(allUsers).filter(u=>u.verified).length;
+    document.getElementById('verified-count').textContent=verifiedCount;
+    toast(newVal?`✅ Badge given to ${u.name}`:`Badge removed from ${u.name}`,'ok');
+
+    // Notify user
+    if(newVal) {
+      await sendPushToUser(uid, 'ChatCity ✅', 'You have been verified! Your badge is now active.', 'profile.html', 'system');
+    }
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.toggleBan = async uid => {
+  const u=allUsers[uid];
+  const banRef=ref(db,`admin/banned/${uid}`);
+  const snap=await get(banRef);
+  const isBanned=snap.val()===true;
+  try {
+    await set(banRef, isBanned?null:true);
+    const btn=document.getElementById(`ban-btn-${uid}`);
+    if(btn) {
+      btn.className=`act-btn act-ban ${isBanned?'':'active'}`;
+      btn.innerHTML=isBanned?'🚫 Ban':'🔓 Unban';
+    }
+    toast(isBanned?`${u?.name||'User'} unbanned`:`${u?.name||'User'} banned`,'ok');
+    const banSnap=await get(ref(db,'admin/banned'));
+    document.getElementById('banned-count').textContent=Object.keys(banSnap.val()||{}).length;
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.sendAdminPush = async () => {
+  const target=document.getElementById('push-target').value;
+  const title=document.getElementById('push-title').value.trim();
+  const body=document.getElementById('push-body').value.trim();
+  const result=document.getElementById('push-result');
+  if(!title||!body){ toast('Fill in title and message','error'); return; }
+
+  result.innerHTML='<i class="fas fa-spinner fa-spin"></i> Sending…';
+  try {
+    await adminSendPush(target, title, body, 'home.html');
+    result.innerHTML=`<span style="color:var(--green);">✅ Sent to ${target==='ALL'?'all users':allUsers[target]?.name||'user'}</span>`;
+    toast('Notification sent!','ok');
+    document.getElementById('push-title').value='';
+    document.getElementById('push-body').value='';
+    loadBroadcasts();
+  } catch(e) {
+    result.innerHTML=`<span style="color:var(--red);">❌ ${e.message}</span>`;
+  }
+};
+
+function loadBroadcasts() {
+  onValue(ref(db,'admin/broadcasts'), snap=>{
+    const all=snap.val()||{};
+    const list=document.getElementById('broadcasts-list');
+    const entries=Object.entries(all).sort((a,b)=>b[1].ts-a[1].ts).slice(0,10);
+    if(!entries.length) { list.innerHTML='<div class="loading-row" style="font-size:12px;">No broadcasts yet</div>'; return; }
+    list.innerHTML='';
+    entries.forEach(([,b])=>{
+      const d=new Date(b.ts);
+      list.innerHTML+=`<div style="padding:12px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:700;">${escHtml(b.title)}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:3px;">${escHtml(b.body)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;">${d.toLocaleString()}</div>
+      </div>`;
+    });
+  });
+}
+
+async function loadFcmKeyStatus() {
+  const snap=await get(ref(db,'admin/fcmServerKey'));
+  const key=snap.val();
+  const el=document.getElementById('fcm-key-status');
+  if(key) el.innerHTML='<span style="color:var(--green);">✅ FCM Key is set</span>';
+  else el.innerHTML='<span style="color:var(--yellow);">⚠️ FCM Key not set — push delivery to offline users disabled</span>';
+}
+
+window.saveFcmKey = async () => {
+  const key=document.getElementById('fcm-key-inp').value.trim();
+  if(!key) { toast('Enter FCM server key','error'); return; }
+  await set(ref(db,'admin/fcmServerKey'), key);
+  toast('FCM Key saved!','ok');
+  document.getElementById('fcm-key-inp').value='';
+  loadFcmKeyStatus();
+};
+
+window.rebuildSearchIndex = async () => {
+  toast('Rebuilding index…');
+  const snap=await get(ref(db,'users'));
+  const users=snap.val()||{};
+  let count=0;
+  for(const [uid,u] of Object.entries(users)) {
+    await createUserSearchIndex(uid,u);
+    count++;
+  }
+  toast(`✅ Rebuilt index for ${count} users`,'ok');
+};
+
+window.cleanOldCalls = async () => {
+  const snap=await get(ref(db,'calls'));
+  const calls=snap.val()||{};
+  const cutoff=Date.now()-(24*60*60*1000); // 24 hours
+  let count=0;
+  for(const [id,c] of Object.entries(calls)) {
+    if((c.ts||0)<cutoff) { await remove(ref(db,`calls/${id}`)); count++; }
+  }
+  toast(`✅ Cleaned ${count} old call records`,'ok');
+};
+
+window.clearErrors = async () => {
+  await remove(ref(db,'admin/errors'));
+  toast('Error logs cleared','ok');
+};
+</script>
+</body>
+</html>

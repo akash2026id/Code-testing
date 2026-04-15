@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ChatCity — Chats</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+#root { display:flex; flex-direction:column; height:100dvh; }
+.page-content { flex:1; overflow-y:auto; padding-bottom:8px; }
+.chat-item { display:flex;align-items:center;gap:13px;padding:13px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;position:relative; }
+.chat-item:active { background:var(--bg3); }
+.chat-av-wrap { position:relative;flex-shrink:0; }
+.chat-av { width:52px;height:52px;border-radius:50%;font-size:18px; }
+.chat-body { flex:1;min-width:0; }
+.chat-name { font-weight:700;font-size:15px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px; }
+.chat-preview { font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.chat-meta { display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0; }
+.chat-time { font-size:11px;color:var(--text3); }
+.chat-badge { background:var(--accent);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:2px 7px;min-width:18px;text-align:center; }
+.empty { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;text-align:center;color:var(--text3); }
+.empty-emoji { font-size:60px;margin-bottom:16px;opacity:.5; }
+.empty h3 { font-size:18px;font-weight:700;color:var(--text2);margin-bottom:8px; }
+.empty p { font-size:13px;line-height:1.6; }
+.search-wrap { padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5; }
+.search-inp { width:100%;padding:10px 16px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:30px;color:var(--text);font-family:var(--font);font-size:14px;outline:none; }
+.search-inp:focus { border-color:var(--accent); }
+.search-inp::placeholder { color:var(--text3); }
+@keyframes shine { 0%,100%{opacity:1;filter:brightness(1)} 50%{opacity:.7;filter:brightness(1.8)} }
+.verified-badge { width:14px;height:14px;vertical-align:middle;animation:shine 2s infinite;flex-shrink:0; }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="root">
+  <div class="topbar">
+    <div class="topbar-title">Chat<span>City</span></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-icon btn" onclick="go('contacts.html')" title="New chat"><i class="fas fa-pen-to-square"></i></button>
+      <div id="my-av" class="av" style="width:38px;height:38px;font-size:14px;cursor:pointer;" onclick="go('profile.html')"></div>
+    </div>
+  </div>
+
+  <div id="perm-banners"></div>
+
+  <div class="page-content">
+    <div class="search-wrap">
+      <input class="search-inp" type="text" id="search" placeholder="🔍  Search chats…" oninput="filterChats()">
+    </div>
+    <div id="chats-list"></div>
+    <div id="empty-state" class="empty hidden">
+      <div class="empty-emoji"><i class="fas fa-comments" style="opacity:.3;"></i></div>
+      <h3>No chats yet</h3>
+      <p>Tap the edit icon above<br>to find and message someone</p>
+    </div>
+  </div>
+
+  <nav class="bnav">
+    <button class="nbtn active" onclick="go('home.html')">
+      <span class="ni"><i class="fas fa-comment-dots"></i></span>
+      <span class="nl">Chats</span>
+      <span class="badge hidden" id="total-badge"></span>
+    </button>
+    <button class="nbtn" onclick="go('contacts.html')">
+      <span class="ni"><i class="fas fa-users"></i></span>
+      <span class="nl">Contacts</span>
+    </button>
+    <button class="nbtn" onclick="go('profile.html')">
+      <span class="ni"><i class="fas fa-user"></i></span>
+      <span class="nl">Profile</span>
+    </button>
+  </nav>
+</div>
+
+<script type="module">
+import {
+  auth, db, ref, get, onValue, off, onAuthStateChanged,
+  colorFor, initialsOf, chatId, fmtTime, VERIFIED_BADGE,
+  getSession, saveSession, go, setOnline, toast, initFCM
+} from './firebase.js';
+
+let me = null;
+let allChats = [];
+let onlineListeners = {}; // track listeners to clean up
+let chatsListener = null;
+window.go = go;
+
+// Permission banner
+function checkPermissions() {
+  const banners = document.getElementById('perm-banners');
+  banners.innerHTML = '';
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default') {
+    banners.innerHTML = `<div class="perm-banner" onclick="requestNotifPerm()">
+      <i class="fas fa-bell"></i> চ্যাট নোটিফিকেশন পেতে এখানে চাপ দিন
+    </div>`;
+  }
+}
+
+window.requestNotifPerm = async () => {
+  const result = await Notification.requestPermission();
+  if(result === 'granted') { toast('নোটিফিকেশন চালু হয়েছে ✓', 'ok'); checkPermissions(); }
+};
+
+onAuthStateChanged(auth, async user => {
+  if(!user) { go('index.html'); return; }
+  const sess = getSession();
+  if(!sess || sess.uid !== user.uid) { go('index.html'); return; }
+  me = user;
+  initFCM(user.uid);
+  await init();
+  checkPermissions();
+});
+
+async function init() {
+  await setOnline(me.uid);
+  const snap = await get(ref(db, `users/${me.uid}`));
+  const u = snap.val() || {};
+  const av = document.getElementById('my-av');
+  if(u.photo) {
+    av.innerHTML = `<img src="${u.photo}" alt="">`;
+  } else {
+    av.textContent = u.initials || initialsOf(me.displayName||me.email||'?');
+    av.style.background = u.color || colorFor(me.uid);
+  }
+
+  // Clean up previous listener
+  if(chatsListener) off(ref(db, 'chats'), 'value', chatsListener);
+
+  chatsListener = onValue(ref(db, 'chats'), async snap => {
+    const all = snap.val() || {};
+    // Only get MY chats
+    const mine = Object.entries(all).filter(([id]) => id.split('__').includes(me.uid));
+    await renderChats(mine);
+  });
+}
+
+async function renderChats(mine) {
+  const list = document.getElementById('chats-list');
+  const searchQuery = document.getElementById('search').value.toLowerCase().trim();
+
+  if(!mine.length) {
+    list.innerHTML = '';
+    document.getElementById('empty-state').classList.remove('hidden');
+    updateTotalBadge(0);
+    return;
+  }
+  document.getElementById('empty-state').classList.add('hidden');
+
+  // Build chat objects
+  const chatObjects = [];
+  for(const [id, ch] of mine) {
+    const oid = id.split('__').find(x => x !== me.uid);
+    if(!oid) continue;
+    const uSnap = await get(ref(db, `users/${oid}`));
+    if(!uSnap.exists()) continue;
+    const u = uSnap.val();
+    const msgs = ch.messages ? Object.values(ch.messages) : [];
+    const last = msgs.sort((a,b)=>a.ts-b.ts).at(-1);
+    const unread = msgs.filter(m => m.senderId !== me.uid && !m.seen).length;
+    chatObjects.push({ id, oid, u, last, unread });
+  }
+  chatObjects.sort((a,b) => (b.last?.ts||0) - (a.last?.ts||0));
+  allChats = chatObjects;
+
+  // Calculate total unread
+  let totalUnread = chatObjects.reduce((s,c)=>s+c.unread, 0);
+  updateTotalBadge(totalUnread);
+
+  // Re-render list
+  // Remove old online listeners
+  Object.values(onlineListeners).forEach(unsub => { try{ unsub(); }catch{} });
+  onlineListeners = {};
+
+  list.innerHTML = '';
+  chatObjects.forEach(ch => {
+    if(!searchQuery || (ch.u.name||'').toLowerCase().includes(searchQuery)) {
+      list.appendChild(buildChatItem(ch));
+    }
+  });
+}
+
+function buildChatItem({ id, oid, u, last, unread }) {
+  const item = document.createElement('div');
+  item.className = 'chat-item';
+  item.dataset.name = (u.name||'').toLowerCase();
+  item.dataset.oid = oid;
+
+  let preview = 'Tap to chat';
+  if(last) {
+    if(last.type==='voice') preview = '🎙 Voice message';
+    else if(last.type==='gif') preview = '🎞 GIF';
+    else if(last.type==='image') preview = '🖼 Photo';
+    else if(last.type==='video') preview = '🎬 Video';
+    else if(last.type==='missed_call') preview = `📞 Missed ${last.callType||'audio'} call`;
+    else preview = (last.senderId===me.uid?'You: ':``) + (last.text||'');
+    if(last.deleted) preview = '🚫 Message deleted';
+  }
+
+  const verifiedBadge = u.verified
+    ? `<img src="${VERIFIED_BADGE}" class="verified-badge">`
+    : '';
+
+  const avHtml = u.photo
+    ? `<img src="${u.photo}" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;">`
+    : `<div class="av chat-av" style="background:${u.color||colorFor(oid)}">${u.initials||initialsOf(u.name||'?')}</div>`;
+
+  item.innerHTML = `
+    <div class="chat-av-wrap">
+      ${avHtml}
+      <div class="online-dot" id="dot-${oid}" style="display:none;"></div>
+    </div>
+    <div class="chat-body">
+      <div class="chat-name">${escName(u.name||'User')}${verifiedBadge}</div>
+      <div class="chat-preview">${escName(preview)}</div>
+    </div>
+    <div class="chat-meta">
+      <span class="chat-time">${last ? fmtTime(last.ts) : ''}</span>
+      ${unread ? `<span class="chat-badge">${unread > 99 ? '99+' : unread}</span>` : ''}
+    </div>`;
+
+  item.onclick = () => {
+    sessionStorage.setItem('cc_chat_target', JSON.stringify({
+      uid: oid, name: u.name,
+      initials: u.initials||initialsOf(u.name||'?'),
+      color: u.color||colorFor(oid), photo: u.photo||'',
+      verified: u.verified||false
+    }));
+    go('chat.html');
+  };
+
+  // Online status listener
+  const onlineRef = ref(db, `users/${oid}/online`);
+  const unsub = onValue(onlineRef, s => {
+    const dot = document.getElementById(`dot-${oid}`);
+    if(dot) dot.style.display = s.val() ? 'block' : 'none';
+  });
+  onlineListeners[oid] = () => off(onlineRef, 'value');
+
+  return item;
+}
+
+function escName(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function updateTotalBadge(count) {
+  const badge = document.getElementById('total-badge');
+  if(count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+window.filterChats = () => {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  document.querySelectorAll('.chat-item').forEach(el => {
+    el.style.display = (!q || el.dataset.name.includes(q)) ? '' : 'none';
+  });
+};
+</script>
+</body>
+</html>
